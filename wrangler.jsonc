@@ -35,13 +35,18 @@
 	},
 	"triggers": {
 		"crons": [
-		"*/5 * * * *"
+			"*/1 * * * *"
 		]
 	},
 	"kv_namespaces": [
 		{
 			"binding": "STATS_CACHE",
 			"id": "bbe78332c9d7435ab3d09ea3f210009f",
+			"remote": true
+		},
+		{
+			"binding": "SWAPI_KV",
+			"id": "6949e6735e1f40d39758bf04df63c3bd",
 			"remote": true
 		}
 	],

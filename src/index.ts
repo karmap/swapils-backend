@@ -1,50 +1,35 @@
-import { handleStats } from "./routes/stats";
-import { handleHealth } from "./routes/health";
-import { handleEvents } from "./routes/events";
-import { handleGetAllEvents } from "./routes/events-get";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
 
-import { applyCors } from "./middleware/cors";
-import { handlePreflight } from "./middleware/preflight";
-import { scheduled } from "./cron";
 import { queue } from "./queue";
+import { scheduled } from "./cron";
+
+import { apiSwapiRouter } from "./routes/apiSwapiRouter";
+import { apiInfoRouter } from "./routes/apiInfoRouter";
+import { apiAnalyticsRouter } from "./routes/apiAnalyticsRouter";
+import { apiCacheRouter } from "./routes/apiCacheRouter";
+
+const app = new Hono<{ Bindings: Env }>();
+
+app.use("*", cors({
+  origin: ["http://localhost:5173", "https://swapils.vercel.app"],
+  allowMethods: ["GET","POST","OPTIONS"],
+  allowHeaders: ["Content-Type","Authorization"],
+  credentials: true,
+  maxAge: 86400
+}));
+
+app.route("/api/info", apiInfoRouter);
+app.route("/api/swapi", apiSwapiRouter);
+app.route("/api/analytics", apiAnalyticsRouter);
+app.route("/api/cache", apiCacheRouter);
+
+app.notFound((c) =>
+  c.json({ error: "Route not found", path: c.req.path }, 404)
+);
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    const url = new URL(request.url);
-    let response: Response;
-
-    if (request.method === "OPTIONS") {
-      return handlePreflight(request);
-    }
-
-    if (url.pathname === "/api/stats") {
-      const res = await handleStats(env);
-      return applyCors(request, res);
-    }
-
-    if (url.pathname === "/api/health") {
-      const res = await handleHealth(env);
-      return applyCors(request, res);
-    }
-
-    if (url.pathname === "/api/events" && request.method === "GET") {
-      response = await handleGetAllEvents(env);
-      return applyCors(request, response);
-    }
-
-    if (url.pathname === "/api/events" && request.method === "POST") {
-      response = await handleEvents(request, env);
-      return applyCors(request, response);
-    }
-
-    response = Response.json(
-      { error: "Ruta no existe", path: url.pathname },
-      { status: 404 }
-    );
-
-    return applyCors(request,response);
-  },
-
+  fetch: app.fetch,
   queue,
-  scheduled,
+  scheduled
 };

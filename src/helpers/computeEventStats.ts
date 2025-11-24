@@ -7,14 +7,14 @@ export type TopQuery = {
 
 export type StatsResult = {
   total: number;
-  top_queries: TopQuery[];
   avg_duration: number;
   peak_hour: number | null;
   generated_at: string;
   source: string;
+  top_queries: TopQuery[];
 };
 
-export async function computeStats(env: Env, source: string): Promise<StatsResult> {
+export async function computeEventStats(env: Env, source: string): Promise<StatsResult> {
   const totalRow = await env.DB.prepare(
     "SELECT COUNT(*) AS total FROM events"
   ).first<{ total: number }>();
@@ -54,10 +54,10 @@ export async function computeStats(env: Env, source: string): Promise<StatsResul
 
   return {
     total,
-    top_queries,
     avg_duration,
     peak_hour,
     generated_at: new Date().toISOString(),
     source: source,
+    top_queries,
   };
 }
